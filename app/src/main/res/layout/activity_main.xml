@@ -7,11 +7,21 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center_horizontal"
-    tools:context=".MainActivity">
+    tools:context=".MainActivity"
+    android:background="@color/background">
+
+    <TextView
+        android:id="@+id/mines"
+        android:layout_width="100dp"
+        android:layout_height="50dp"
+        android:gravity="center"
+        android:text="10/10"
+        android:textSize="30sp">
+    </TextView>
 
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="500dp">
+        android:layout_height="wrap_content">
     <HorizontalScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent">
@@ -24,14 +34,5 @@
 
     </HorizontalScrollView>
     </ScrollView>
-
-    <TextView
-        android:id="@+id/mines"
-        android:layout_width="100dp"
-        android:layout_height="50dp"
-        android:gravity="center"
-        android:text="10/10"
-        android:textSize="30sp">
-    </TextView>
 
 </LinearLayout>
