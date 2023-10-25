@@ -3,8 +3,12 @@ package com.example.cells;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
+import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.LayerDrawable;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.GridLayout;
@@ -19,7 +23,7 @@ public class MainActivity extends AppCompatActivity {
     TextView mines;
 
     final int MINESCONST = 15;
-    int minesCurrent = 3;
+    int minesCurrent = MINESCONST;
     final int WIDTH = 10;
     final int HEIGHT = 15;
 
@@ -32,8 +36,9 @@ public class MainActivity extends AppCompatActivity {
 
         mines.setText(""+ minesCurrent +" / "+MINESCONST);
 
-        generate();
+        generateCells();
         generateMines();
+        generate();
 
     }
 
@@ -52,14 +57,11 @@ public class MainActivity extends AppCompatActivity {
     public void generate(){
         GridLayout layout = findViewById(R.id.grid);
 
-        generateCells();
-
         for(int i=0; i<HEIGHT;i++){
             for(int j=0; j<WIDTH;j++){
-                cells[i][j].setText(String.valueOf(1));
-                if((i+j)%2 == 0) cells[i][j].setBackgroundColor(ContextCompat.getColor(this, R.color.lightGreen));
-                else cells[i][j].setBackgroundColor(ContextCompat.getColor(this, R.color.darkGreen));
 
+                if(!cells[i][j].getText().equals("-1"))
+                    cells[i][j].setText(String.valueOf(setTextToCell(i, j)));
 
                 cells[i][j].setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -70,7 +72,8 @@ public class MainActivity extends AppCompatActivity {
                 cells[i][j].setOnLongClickListener(new View.OnLongClickListener() {
                     @Override
                     public boolean onLongClick(View v) {
-                        v.setBackgroundColor(Color.BLUE);
+                        setFlagToCell(v);
+
                         minesCurrent--;
                         mines.setText(String.valueOf(minesCurrent +" / "+MINESCONST));
                         if(minesCurrent==0) {
@@ -85,6 +88,42 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public int setTextToCell(int i, int j){
+        int count = 0;
+
+        int topLock = i - 1, bottomLock = i + 1, rightLock = j + 1, leftLock = j - 1;
+        if (j == 0) leftLock = 0;
+        else if(j == WIDTH - 1) rightLock = WIDTH - 1;
+        if (i == 0) topLock = 0;
+        else if (i == HEIGHT - 1) bottomLock = HEIGHT - 1;
+
+        for (int m = topLock; m <= bottomLock; m++) {
+            for (int n = leftLock; n <= rightLock; n++) {
+                if (cells[m][n].getText().equals("-1")) count++;
+            }
+        }
+
+        return count;
+    }
+
+    public void setFlagToCell(View view){
+        Drawable[] layers = new Drawable[2];
+
+        Drawable currentBackground = view.getBackground();
+        layers[0] = currentBackground; // Текущий фон
+        // Получаем значок (изображение) из ресурсов
+        Drawable iconDrawable = ContextCompat.getDrawable(getApplicationContext(), R.drawable.flag);
+        layers[1] = iconDrawable; // Значок
+        LayerDrawable layerDrawable = new LayerDrawable(layers);
+        // Устанавливаем LayerDrawable как фон элемента View
+        view.setBackground(layerDrawable);
+    }
+
+    public void setColorToCell(TextView cell, int i, int j){
+        if((i+j)%2 == 0) cell.setBackgroundColor(ContextCompat.getColor(this, R.color.lightGreen));
+        else cell.setBackgroundColor(ContextCompat.getColor(this, R.color.darkGreen));
+    }
+
     public void generateCells(){
         LayoutInflater inflater = (LayoutInflater) getApplicationContext().getSystemService(LAYOUT_INFLATER_SERVICE);
         GridLayout layout = findViewById(R.id.grid);
@@ -96,6 +135,7 @@ public class MainActivity extends AppCompatActivity {
             for(int j=0; j<WIDTH;j++){
                 // Используем LayoutInflater для надувания макета кнопки из R.layout.cell
                 cells[i][j] = (TextView) inflater.inflate(R.layout.cell, layout, false);
+                setColorToCell(cells[i][j], i, j);
             }
         }
     }
