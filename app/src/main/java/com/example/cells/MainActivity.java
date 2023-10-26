@@ -19,13 +19,15 @@ import java.util.Random;
 public class MainActivity extends AppCompatActivity {
 
     TextView[][] cells;
+    String[][] cellsText;
     boolean[][] opened; // Массив для отслеживания открытых клеток
     TextView minesCounter, refreshButton;
 
-    final int MINESCONST = 15;
+    final int MINESCONST = 35;
     int minesCurrent = MINESCONST;
+    int minesReality = MINESCONST;
     final int WIDTH = 10;
-    final int HEIGHT = 15;
+    final int HEIGHT = 20 ;
 
 
     @Override
@@ -45,11 +47,10 @@ public class MainActivity extends AppCompatActivity {
 
     public void generate() {
         minesCounter = findViewById(R.id.mines);
-        minesCounter.setText("" + minesCurrent + " / " + MINESCONST);
+        minesCounter.setText(String.valueOf(minesCurrent + " / " + MINESCONST));
 
         generateMines();
         generateAction();
-        hideTextToCells();
         setColorToCells();
     }
 
@@ -60,20 +61,26 @@ public class MainActivity extends AppCompatActivity {
         layout.setColumnCount(WIDTH); // Устанавливаем количество столбцов в GridLayout (WIDTH - константа)
 
         cells = new TextView[HEIGHT][WIDTH];
+        cellsText = new String[HEIGHT][WIDTH];
         opened = new boolean[HEIGHT][WIDTH];
         for (int i = 0; i < HEIGHT; i++) { // Создаем цикл для создания кнопок (Cells)
             for (int j = 0; j < WIDTH; j++) {
                 // Используем LayoutInflater для надувания макета кнопки из R.layout.cell
                 cells[i][j] = (TextView) inflater.inflate(R.layout.cell, layout, false);
                 layout.addView(cells[i][j]);
+                cellsText[i][j] = "0";
             }
         }
     }
     public void resetCells(){
+        minesCurrent = MINESCONST;
+        minesReality = MINESCONST;
+        cellsText = new String[HEIGHT][WIDTH];
         opened = new boolean[HEIGHT][WIDTH];
+
         for (int i = 0; i < HEIGHT; i++) {
             for (int j = 0; j < WIDTH; j++) {
-                cells[i][j].setText(String.valueOf(0));
+                cellsText[i][j] = "0";
             }
         }
     }
@@ -82,8 +89,8 @@ public class MainActivity extends AppCompatActivity {
         while (flag < MINESCONST) {
             int positionX = getRandomPosition(HEIGHT);
             int positionY = getRandomPosition(WIDTH);
-            if (!cells[positionX][positionY].getText().equals("-1")) {
-                cells[positionX][positionY].setText("-1");
+            if (!cellsText[positionX][positionY].equals("-1")) {
+                cellsText[positionX][positionY] = "-1";
                 flag++;
             }
         }
@@ -95,24 +102,29 @@ public class MainActivity extends AppCompatActivity {
                 final int finalI = i;
                 final int finalJ = j;
 
-                if (!cells[i][j].getText().equals("-1"))
-                    cells[i][j].setText(String.valueOf(setTextToCell(i, j)));
+                if (!cellsText[i][j].equals(String.valueOf(-1)))
+                    cellsText[i][j] = String.valueOf(setTextToCell(i, j));
 
                 cells[i][j].setOnClickListener(view -> {
-                    if((finalI+finalJ)%2 == 0) view.setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.darkGray));
-                    else view.setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.lightGreen));
-                    if (cells[finalI][finalJ].getText().equals("-1")) {
+                    if (cellsText[finalI][finalJ].equals("-1")) {
+                        if((finalI+finalJ)%2 == 0)
+                            view.setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.darkGray));
+                        else view.setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.lightGray));
                         Toast.makeText(getApplicationContext(), "LOSE!!!", Toast.LENGTH_LONG).show();
                     } else {
                         openCells(finalI, finalJ);
-                        Log.d("MyLog", "Tap on 0");
                     }
                 });
                 cells[i][j].setOnLongClickListener(view -> {
-                    setFlagToCell(view);
-                    minesCurrent--;
+                    if(minesCurrent-1 >= 0){
+                        minesCurrent--;
+                        setFlagToCell(view);
+                    }
+
                     minesCounter.setText(String.valueOf(minesCurrent + " / " + MINESCONST));
-                    if (minesCurrent == 0) {
+                    if(cellsText[finalI][finalJ].equals("-1"))
+                        minesReality--;
+                    if (minesReality == 0) {
                         Toast.makeText(getApplicationContext(), "WIN!!!", Toast.LENGTH_LONG).show();
                     }
                     return true;
@@ -130,24 +142,20 @@ public class MainActivity extends AppCompatActivity {
         if((i+j)%2 == 0) cells[i][j].setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.darkGray));
         else cells[i][j].setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.lightGray));
 
+        cells[i][j].setText(cellsText[i][j]);
+
 
         // Если текущая клетка пуста, рекурсивно раскрываем соседние клетки
-        if (cells[i][j].getText().equals("0")) {
+        if (cellsText[i][j].equals("0")) {
             openCells(i - 1, j);
             openCells(i + 1, j);
             openCells(i, j - 1);
             openCells(i, j + 1);
-        }
-    }
-
-    public void hideTextToCells() {
-        for (int i = 0; i < HEIGHT; i++) {
-            for (int j = 0; j < WIDTH; j++) {
-                cells[i][j].setTextColor(Color.RED);
-                if ((i + j) % 2 == 0)
-                    cells[i][j].setTextColor(ContextCompat.getColor(this, R.color.lightGreen));
-                else cells[i][j].setTextColor(ContextCompat.getColor(this, R.color.darkGreen));
-            }
+            // Диагональ
+            openCells(i - 1, j - 1);
+            openCells(i - 1, j + 1);
+            openCells(i + 1, j - 1);
+            openCells(i + 1, j + 1);
         }
     }
 
@@ -162,13 +170,12 @@ public class MainActivity extends AppCompatActivity {
 
         for (int m = topLock; m <= bottomLock; m++) {
             for (int n = leftLock; n <= rightLock; n++) {
-                if (cells[m][n].getText().equals("-1")) count++;
+                if (cellsText[m][n].equals("-1")) count++;
             }
         }
 
         return count;
     }
-
     public void setFlagToCell(View view) {
         Drawable[] layers = new Drawable[2];
 
@@ -182,17 +189,15 @@ public class MainActivity extends AppCompatActivity {
         view.setBackground(layerDrawable);
     }
 
-
     public void setColorToCells() {
         for (int i = 0; i < HEIGHT; i++) {
             for (int j = 0; j < WIDTH; j++) {
                 if ((i + j) % 2 == 0) cells[i][j].setBackgroundColor(ContextCompat.getColor(this, R.color.lightGreen));
                 else cells[i][j].setBackgroundColor(ContextCompat.getColor(this, R.color.darkGreen));
+                Log.d("MyLog", "setColorToCells()");
             }
         }
     }
-
-
 
     public int getRandomPosition(int value) {
         return new Random().nextInt(value);
