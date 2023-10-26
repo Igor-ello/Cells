@@ -5,5 +5,6 @@
     <color name="darkGreen">#05870A</color>
     <color name="lightGreen">#8BC34A</color>
     <color name="background">#00BCD4</color>
-    <color name="gray">#D5CDCD</color>
+    <color name="darkGray">#B3ACAC</color>
+    <color name="lightGray">#979191</color>
 </resources>
