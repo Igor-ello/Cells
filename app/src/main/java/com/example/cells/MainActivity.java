@@ -3,7 +3,6 @@ package com.example.cells;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
-import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
@@ -20,7 +19,9 @@ import java.util.Random;
 public class MainActivity extends AppCompatActivity {
 
     TextView[][] cells;
-    TextView mines;
+    boolean[][] opened; // Массив для отслеживания открытых клеток
+    TextView minesCounter, refreshButton;
+
 
     final int MINESCONST = 15;
     int minesCurrent = MINESCONST;
@@ -32,55 +33,91 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mines = findViewById(R.id.mines);
 
-        mines.setText(""+ minesCurrent +" / "+MINESCONST);
+        generate();
+
+        refreshButton = findViewById(R.id.refresh);
+        refreshButton.setOnClickListener(view -> {
+            resetCells();
+            setColorToCells();
+            generateMines();
+            for (int i = 0; i < HEIGHT; i++) {
+                for (int j = 0; j < WIDTH; j++) {
+                    if (!cells[i][j].getText().equals("-1"))
+                        cells[i][j].setText(String.valueOf(setTextToCell(i, j)));
+                }
+            }
+            hideTextToCells();
+        });
+    }
+
+    public void generate() {
+        minesCounter = findViewById(R.id.mines);
+        minesCounter.setText("" + minesCurrent + " / " + MINESCONST);
 
         generateCells();
         generateMines();
-        generate();
-
+        generateAction();
+        hideTextToCells();
     }
 
-    public void generateMines(){
-        for(int i=0; i<MINESCONST; i++){
+    public void generateCells() {
+        LayoutInflater inflater = (LayoutInflater) getApplicationContext().getSystemService(LAYOUT_INFLATER_SERVICE);
+        GridLayout layout = findViewById(R.id.grid);
+        layout.removeAllViews(); // Удаляем все существующие представления в GridLayout (если они есть)
+        layout.setColumnCount(WIDTH); // Устанавливаем количество столбцов в GridLayout (WIDTH - константа)
+
+        cells = new TextView[HEIGHT][WIDTH];
+        opened = new boolean[HEIGHT][WIDTH];
+        for (int i = 0; i < HEIGHT; i++) { // Создаем цикл для создания кнопок (Cells)
+            for (int j = 0; j < WIDTH; j++) {
+                // Используем LayoutInflater для надувания макета кнопки из R.layout.cell
+                cells[i][j] = (TextView) inflater.inflate(R.layout.cell, layout, false);
+            }
+        }
+        setColorToCells();
+    }
+
+    public void generateMines() {
+        int flag = 0;
+        while (flag < MINESCONST) {
             int positionX = getRandomPosition(HEIGHT);
             int positionY = getRandomPosition(WIDTH);
-            cells[positionX][positionY].setText(String.valueOf(-1));
+            if (!cells[positionX][positionY].getText().equals("-1")) {
+                cells[positionX][positionY].setText("-1");
+                flag++;
+            }
+            Log.d("MyLog", positionX + " " + positionY);
         }
     }
 
-    public int getRandomPosition(int value){
-        return new Random().nextInt(value);
-    }
-
-    public void generate(){
+    public void generateAction() {
         GridLayout layout = findViewById(R.id.grid);
 
-        for(int i=0; i<HEIGHT;i++){
-            for(int j=0; j<WIDTH;j++){
+        for (int i = 0; i < HEIGHT; i++) {
+            for (int j = 0; j < WIDTH; j++) {
+                final int finalI = i;
+                final int finalJ = j;
 
-                if(!cells[i][j].getText().equals("-1"))
+                if (!cells[i][j].getText().equals("-1"))
                     cells[i][j].setText(String.valueOf(setTextToCell(i, j)));
 
-                cells[i][j].setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        v.setBackgroundColor(Color.RED);
+                cells[i][j].setOnClickListener(view -> {
+                    view.setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.gray));
+                    if (cells[finalI][finalJ].getText().equals("-1")) {
+                        Toast.makeText(getApplicationContext(), "LOSE!!!", Toast.LENGTH_LONG).show();
+                    } else {
+                        openCells(finalI, finalJ);
                     }
                 });
-                cells[i][j].setOnLongClickListener(new View.OnLongClickListener() {
-                    @Override
-                    public boolean onLongClick(View v) {
-                        setFlagToCell(v);
-
-                        minesCurrent--;
-                        mines.setText(String.valueOf(minesCurrent +" / "+MINESCONST));
-                        if(minesCurrent==0) {
-                            Toast.makeText(getApplicationContext(), "WIN!!!", Toast.LENGTH_LONG).show();
-                        }
-                        return true;
+                cells[i][j].setOnLongClickListener(view -> {
+                    setFlagToCell(view);
+                    minesCurrent--;
+                    minesCounter.setText(String.valueOf(minesCurrent + " / " + MINESCONST));
+                    if (minesCurrent == 0) {
+                        Toast.makeText(getApplicationContext(), "WIN!!!", Toast.LENGTH_LONG).show();
                     }
+                    return true;
                 });
 
                 layout.addView(cells[i][j]);
@@ -88,12 +125,47 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public int setTextToCell(int i, int j){
+    public void openCells(int i, int j) {
+        if (i < 0 || i >= cells.length || j < 0 || j >= cells[0].length || opened[i][j]) {
+            return; // Клетка находится за пределами поля или уже открыта
+        }
+
+        opened[i][j] = true;
+        cells[i][j].setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.gray));
+
+        // Если текущая клетка пуста, рекурсивно раскрываем соседние клетки
+        if (cells[i][j].getText().equals("0")) {
+            openCells(i - 1, j);
+            openCells(i + 1, j);
+            openCells(i, j - 1);
+            openCells(i, j + 1);
+        }
+    }
+    public void resetCells(){
+        for (int i = 0; i < HEIGHT; i++) {
+            for (int j = 0; j < WIDTH; j++) {
+                cells[i][j].setText(String.valueOf(0));
+            }
+        }
+    }
+
+    public void hideTextToCells() {
+        for (int i = 0; i < HEIGHT; i++) {
+            for (int j = 0; j < WIDTH; j++) {
+                cells[i][j].setTextColor(Color.RED);
+                if ((i + j) % 2 == 0)
+                    cells[i][j].setTextColor(ContextCompat.getColor(this, R.color.lightGreen));
+                else cells[i][j].setTextColor(ContextCompat.getColor(this, R.color.darkGreen));
+            }
+        }
+    }
+
+    public int setTextToCell(int i, int j) {
         int count = 0;
 
         int topLock = i - 1, bottomLock = i + 1, rightLock = j + 1, leftLock = j - 1;
         if (j == 0) leftLock = 0;
-        else if(j == WIDTH - 1) rightLock = WIDTH - 1;
+        else if (j == WIDTH - 1) rightLock = WIDTH - 1;
         if (i == 0) topLock = 0;
         else if (i == HEIGHT - 1) bottomLock = HEIGHT - 1;
 
@@ -106,7 +178,7 @@ public class MainActivity extends AppCompatActivity {
         return count;
     }
 
-    public void setFlagToCell(View view){
+    public void setFlagToCell(View view) {
         Drawable[] layers = new Drawable[2];
 
         Drawable currentBackground = view.getBackground();
@@ -119,24 +191,17 @@ public class MainActivity extends AppCompatActivity {
         view.setBackground(layerDrawable);
     }
 
-    public void setColorToCell(TextView cell, int i, int j){
-        if((i+j)%2 == 0) cell.setBackgroundColor(ContextCompat.getColor(this, R.color.lightGreen));
-        else cell.setBackgroundColor(ContextCompat.getColor(this, R.color.darkGreen));
-    }
-
-    public void generateCells(){
-        LayoutInflater inflater = (LayoutInflater) getApplicationContext().getSystemService(LAYOUT_INFLATER_SERVICE);
-        GridLayout layout = findViewById(R.id.grid);
-        layout.removeAllViews(); // Удаляем все существующие представления в GridLayout (если они есть)
-        layout.setColumnCount(WIDTH); // Устанавливаем количество столбцов в GridLayout (WIDTH - константа)
-
-        cells = new TextView[HEIGHT][WIDTH];
-        for(int i=0; i<HEIGHT;i++){ // Создаем цикл для создания кнопок (Cells)
-            for(int j=0; j<WIDTH;j++){
-                // Используем LayoutInflater для надувания макета кнопки из R.layout.cell
-                cells[i][j] = (TextView) inflater.inflate(R.layout.cell, layout, false);
-                setColorToCell(cells[i][j], i, j);
+    public void setColorToCells() {
+        for (int i = 0; i < HEIGHT; i++) {
+            for (int j = 0; j < WIDTH; j++) {
+                if ((i + j) % 2 == 0) cells[i][j].setBackgroundColor(ContextCompat.getColor(this, R.color.lightGreen));
+                else cells[i][j].setBackgroundColor(ContextCompat.getColor(this, R.color.darkGreen));
             }
         }
     }
+
+    public int getRandomPosition(int value) {
+        return new Random().nextInt(value);
+    }
+
 }

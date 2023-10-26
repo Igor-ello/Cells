@@ -10,29 +10,43 @@
     tools:context=".MainActivity"
     android:background="@color/background">
 
-    <TextView
-        android:id="@+id/mines"
-        android:layout_width="100dp"
-        android:layout_height="50dp"
-        android:gravity="center"
-        android:text="10/10"
-        android:textSize="30sp">
-    </TextView>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center">
+        <TextView
+            android:id="@+id/mines"
+            android:layout_width="100dp"
+            android:layout_height="50dp"
+            android:gravity="center"
+            android:text="10/10"
+            android:textSize="30sp"
+            android:textColor="@color/white">
+        </TextView>
+        <TextView
+            android:id="@+id/refresh"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:background="@drawable/refresh"
+            android:layout_marginLeft="30dp">
+        </TextView>
+    </LinearLayout>
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
-    <HorizontalScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
-        <GridLayout
-            android:id="@+id/grid"
+        <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent">
-        </GridLayout>
 
-    </HorizontalScrollView>
+            <GridLayout
+                android:id="@+id/grid"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+            </GridLayout>
+
+        </HorizontalScrollView>
     </ScrollView>
 
 </LinearLayout>
