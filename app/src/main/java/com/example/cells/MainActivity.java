@@ -16,13 +16,14 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.Objects;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
 
     TextView[][] cells;
     String[][] cellsText;
-    boolean[][] opened; // Массив для отслеживания открытых клеток
+    boolean[][] opened, cellsFlag;
     TextView minesCounter, refresh, refreshButton, menuText;
     LinearLayout imStopGame;
 
@@ -74,6 +75,7 @@ public class MainActivity extends AppCompatActivity {
 
         cells = new TextView[HEIGHT][WIDTH];
         cellsText = new String[HEIGHT][WIDTH];
+        cellsFlag = new boolean[HEIGHT][WIDTH];
         opened = new boolean[HEIGHT][WIDTH];
         for (int i = 0; i < HEIGHT; i++) { // Создаем цикл для создания кнопок (Cells)
             for (int j = 0; j < WIDTH; j++) {
@@ -81,6 +83,7 @@ public class MainActivity extends AppCompatActivity {
                 cells[i][j] = (TextView) inflater.inflate(R.layout.cell, layout, false);
                 layout.addView(cells[i][j]);
                 cellsText[i][j] = "0";
+                cellsFlag[i][j] = false;
             }
         }
     }
@@ -89,6 +92,7 @@ public class MainActivity extends AppCompatActivity {
         minesReality = MINESCONST;
         cellsText = new String[HEIGHT][WIDTH];
         opened = new boolean[HEIGHT][WIDTH];
+        cellsFlag = new boolean[HEIGHT][WIDTH];
 
         for (int i = 0; i < HEIGHT; i++) {
             for (int j = 0; j < WIDTH; j++) {
@@ -120,17 +124,17 @@ public class MainActivity extends AppCompatActivity {
                     setTextColorToCell(i, j);
                 }
 
-
-
                 cells[i][j].setOnClickListener(view -> {
-                    if(hasIcon(view)) {
-                        minesCurrent++;
-                        minesCounter.setText(String.valueOf(minesCurrent + " / " + MINESCONST));
-                    }
                     if (cellsText[finalI][finalJ].equals("-1")) {
-                        if((finalI+finalJ)%2 == 0) //TODO разобраться с флагами
-                            view.setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.darkGray));
-                        else view.setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.lightGray));
+                        Log.d("log", String.valueOf(cellsFlag[finalI][finalJ]));
+                        if(cellsFlag[finalI][finalJ]){
+                            minesCurrent++;
+                            cellsFlag[finalI][finalJ] = false;
+                            minesCounter.setText(String.valueOf(minesCurrent + " / " + MINESCONST));
+                        }
+                        if((finalI+finalJ)%2 == 0)
+                            view.setBackgroundColor(ContextCompat.getColor(this, R.color.darkGray));
+                        else view.setBackgroundColor(ContextCompat.getColor(this, R.color.lightGray));
 
                         setPictureToCell(view, ContextCompat.getDrawable(getApplicationContext(), R.drawable.explosion));
 
@@ -140,10 +144,20 @@ public class MainActivity extends AppCompatActivity {
                         openCells(finalI, finalJ);
                     }
                 });
-                cells[i][j].setOnLongClickListener(view -> {
-                    if(minesCurrent-1 >= 0){
-                        minesCurrent--;
-                        setPictureToCell(view, ContextCompat.getDrawable(getApplicationContext(), R.drawable.flag));
+                cells[i][j].setOnLongClickListener(view -> { //постановка уборка флага
+                    if(String.valueOf(cells[finalI][finalJ].getText()).equals(""))
+                    if(!cellsFlag[finalI][finalJ]) {
+                        if (minesCurrent-1 >= 0) {
+                            minesCurrent--;
+                            setPictureToCell(view, ContextCompat.getDrawable(this, R.drawable.flag));
+                        }
+                        cellsFlag[finalI][finalJ] = true;
+                    }
+                    else{
+                        minesCurrent++;
+                        if((finalI + finalJ)%2 == 0) view.setBackgroundColor(ContextCompat.getColor(this, R.color.lightGreen));
+                        else view.setBackgroundColor(ContextCompat.getColor(this, R.color.darkGreen));
+                        cellsFlag[finalI][finalJ] = false;
                     }
 
                     minesCounter.setText(String.valueOf(minesCurrent + " / " + MINESCONST));
@@ -167,7 +181,7 @@ public class MainActivity extends AppCompatActivity {
         if((i+j)%2 == 0) cells[i][j].setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.darkGray));
         else cells[i][j].setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.lightGray));
 
-        cells[i][j].setText(cellsText[i][j]);
+        if (!cellsText[i][j].equals("0")) cells[i][j].setText(cellsText[i][j]);
 
 
         // Если текущая клетка пуста, рекурсивно раскрываем соседние клетки
@@ -203,8 +217,8 @@ public class MainActivity extends AppCompatActivity {
     }
     public void  setTextColorToCell(int i, int j){
         int[] colors = {R.color.number1, R.color.number2, R.color.number3, R.color.number4, R.color.number5, R.color.number6, R.color.number7, R.color.number8};
-        if(!cellsText[i][j].equals(""))
-            cells[i][j].setTextColor(ContextCompat.getColor(getApplicationContext(), colors[Integer.parseInt(cellsText[i][j])]));
+        if(!cellsText[i][j].equals("0"))
+            cells[i][j].setTextColor(ContextCompat.getColor(getApplicationContext(), colors[Integer.parseInt(cellsText[i][j]) - 1]));
     }
 
     public void setPictureToCell(View view, Drawable drawable) {
@@ -219,22 +233,6 @@ public class MainActivity extends AppCompatActivity {
         // Устанавливаем LayerDrawable как фон элемента View
         view.setBackground(layerDrawable);
     }
-    public boolean hasIcon(View view) {
-        Drawable background = view.getBackground();
-        if (background instanceof LayerDrawable) {
-            LayerDrawable layerDrawable = (LayerDrawable) background;
-            int numberOfLayers = layerDrawable.getNumberOfLayers();
-            // Проверяем, есть ли второй слой, который будет значком
-            if (numberOfLayers >= 2) {
-                Drawable iconDrawable = layerDrawable.getDrawable(1); // Второй слой
-                return iconDrawable != null;
-            }
-        }
-        return false; // Значок отсутствует
-    }
-
-
-
 
     public void setColorToCells() { //TODO покрасить цифры
         for (int i = 0; i < HEIGHT; i++) {
