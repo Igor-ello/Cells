@@ -119,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
                 cells[i][j].setOnLongClickListener(view -> { //долгий клик
-                    if(isStart) { // если клетка не открыта
+                    if(isStart && !opened[finalI][finalJ]) { // если клетка не открыта и игра запущена
                         if (!cellsFlag[finalI][finalJ]) {
                             setFlag(view, finalI, finalJ); // поставить флаг
                         } else {
