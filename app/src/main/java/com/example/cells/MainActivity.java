@@ -20,7 +20,7 @@ public class MainActivity extends AppCompatActivity {
     TextView[][] cells;
     String[][] cellsText;
     boolean[][] opened, cellsFlag;
-    TextView minesCounter, refresh1, refresh2, menuText;
+    TextView minesCounter, menuText;
     LinearLayout imStopGame;
 
     final int MINESCONST = 35;
@@ -37,8 +37,6 @@ public class MainActivity extends AppCompatActivity {
         imStopGame = findViewById(R.id.imStopGame);
         menuText = findViewById(R.id.menuText);
         minesCounter = findViewById(R.id.mines);
-        refresh1 = findViewById(R.id.refresh1);
-        refresh2 = findViewById(R.id.refresh2);
 
         initCells();
         setListeners();
@@ -47,11 +45,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setListeners() {
-        refresh1.setOnClickListener(view -> {
+        findViewById(R.id.refresh1).setOnClickListener(view -> {
             resetCells();
             generate();
         });
-        refresh2.setOnClickListener(view -> {
+        findViewById(R.id.refresh2).setOnClickListener(view -> {
             imStopGame.setVisibility(View.GONE);
             resetCells();
             generate();
@@ -90,9 +88,7 @@ public class MainActivity extends AppCompatActivity {
             cellsFlag[i][j] = false;
             updateMinesCounter();
         }
-        if((i+j)%2 == 0)
-            view.setBackgroundColor(ContextCompat.getColor(this, R.color.darkGray));
-        else view.setBackgroundColor(ContextCompat.getColor(this, R.color.lightGray));
+        setBackColor(view, i, j);
 
         setPictureToCell(view, ContextCompat.getDrawable(getApplicationContext(), R.drawable.explosion));
 
@@ -123,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
                 cells[i][j].setOnLongClickListener(view -> { //долгий клик
-                    if(!opened[finalI][finalJ]) { // если клетка не открыта
+                    if(isStart) { // если клетка не открыта
                         if (!cellsFlag[finalI][finalJ]) {
                             setFlag(view, finalI, finalJ); // поставить флаг
                         } else {
@@ -153,12 +149,14 @@ public class MainActivity extends AppCompatActivity {
         cellsText = new String[HEIGHT][WIDTH];
         cellsFlag = new boolean[HEIGHT][WIDTH];
         opened = new boolean[HEIGHT][WIDTH];
+
         for (int i = 0; i < HEIGHT; i++) { // Создаем цикл для создания кнопок (Cells)
             for (int j = 0; j < WIDTH; j++) {
                 // Используем LayoutInflater для надувания макета кнопки из R.layout.cell
                 cells[i][j] = (TextView) inflater.inflate(R.layout.cell, layout, false);
                 layout.addView(cells[i][j]);
-                cellsText[i][j] = "0";
+                cells[i][j].setText("");
+                cellsText[i][j] = "0"; // базовые значения
                 cellsFlag[i][j] = false;
             }
         }
@@ -176,6 +174,7 @@ public class MainActivity extends AppCompatActivity {
             for (int j = 0; j < WIDTH; j++) {
                 cells[i][j].setText("");
                 cellsText[i][j] = "0";
+                cellsFlag[i][j] = false;
             }
         }
     }
@@ -186,15 +185,14 @@ public class MainActivity extends AppCompatActivity {
         }
 
         opened[i][j] = true;
-        if((i+j)%2 == 0) cells[i][j].setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.darkGray));
-        else cells[i][j].setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.lightGray));
+        setBackColor(i, j);
 
-        if (cellsFlag[i][j]) {
+        if (!cellsText[i][j].equals("0")) cells[i][j].setText(cellsText[i][j]);
+
+        if(cellsFlag[i][j]){
             minesCurrent++;
             updateMinesCounter();
         }
-
-        if (!cellsText[i][j].equals("0")) cells[i][j].setText(cellsText[i][j]);
 
 
         // Если текущая клетка пуста, рекурсивно раскрываем соседние клетки
@@ -214,8 +212,7 @@ public class MainActivity extends AppCompatActivity {
     public void setColorToCells() { //TODO покрасить цифры
         for (int i = 0; i < HEIGHT; i++) {
             for (int j = 0; j < WIDTH; j++) {
-                if ((i + j) % 2 == 0) cells[i][j].setBackgroundColor(ContextCompat.getColor(this, R.color.lightGreen));
-                else cells[i][j].setBackgroundColor(ContextCompat.getColor(this, R.color.darkGreen));
+                setFrontColor(i, j);
             }
         }
     }
@@ -297,11 +294,28 @@ public class MainActivity extends AppCompatActivity {
 
     public void deleteFlag(View view, int i, int j){
         minesCurrent++;
-        if ((i + j) % 2 == 0)
-            view.setBackgroundColor(ContextCompat.getColor(this, R.color.lightGreen));
-        else
-            view.setBackgroundColor(ContextCompat.getColor(this, R.color.darkGreen));
+        setFrontColor(view, i, j);
         cellsFlag[i][j] = false;
+    }
+
+
+    //Colors
+    public void setBackColor(View view, int i, int j){
+        if((i+j)%2 == 0) view.setBackgroundColor(ContextCompat.getColor(this, R.color.darkGray));
+        else view.setBackgroundColor(ContextCompat.getColor(this, R.color.lightGray));
+    }
+    public void setBackColor(int i, int j){
+        if((i+j)%2 == 0) cells[i][j].setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.darkGray));
+        else cells[i][j].setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.lightGray));
+    }
+
+    public void setFrontColor(View view, int i, int j){
+        if((i+j)%2 == 0) view.setBackgroundColor(ContextCompat.getColor(this, R.color.lightGreen));
+        else view.setBackgroundColor(ContextCompat.getColor(this, R.color.darkGreen));
+    }
+    public void setFrontColor(int i, int j){
+        if((i+j)%2 == 0) cells[i][j].setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.lightGreen));
+        else cells[i][j].setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.darkGreen));
     }
 
 
