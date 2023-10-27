@@ -118,10 +118,15 @@ public class MainActivity extends AppCompatActivity {
 
 
                 cells[i][j].setOnClickListener(view -> {
+                    if(hasIcon(view)) {
+                        minesCurrent++;
+                        minesCounter.setText(String.valueOf(minesCurrent + " / " + MINESCONST));
+                    }
                     if (cellsText[finalI][finalJ].equals("-1")) {
-                        if((finalI+finalJ)%2 == 0)
+                        if((finalI+finalJ)%2 == 0) //TODO разобраться с флагами
                             view.setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.darkGray));
                         else view.setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.lightGray));
+
                         setPictureToCell(view, ContextCompat.getDrawable(getApplicationContext(), R.drawable.explosion));
 
                         imStopGame.setVisibility(View.VISIBLE);
@@ -133,10 +138,7 @@ public class MainActivity extends AppCompatActivity {
                 cells[i][j].setOnLongClickListener(view -> {
                     if(minesCurrent-1 >= 0){
                         minesCurrent--;
-                        if(hasIcon(view)) {
-                            removePictureFromCell(view);
-                        }//TODO убрать флаг, если он есть
-                        else setPictureToCell(view, ContextCompat.getDrawable(getApplicationContext(), R.drawable.flag));
+                        setPictureToCell(view, ContextCompat.getDrawable(getApplicationContext(), R.drawable.flag));
                     }
 
                     minesCounter.setText(String.valueOf(minesCurrent + " / " + MINESCONST));
@@ -207,15 +209,6 @@ public class MainActivity extends AppCompatActivity {
         // Устанавливаем LayerDrawable как фон элемента View
         view.setBackground(layerDrawable);
     }
-    public void removePictureFromCell(View view) {
-        Drawable[] layers = new Drawable[1];
-
-        Drawable currentBackground = view.getBackground();
-        layers[0] = currentBackground; // Текущий фон
-        LayerDrawable layerDrawable = new LayerDrawable(layers);
-
-        view.setBackground(layerDrawable);
-    }
     public boolean hasIcon(View view) {
         Drawable background = view.getBackground();
         if (background instanceof LayerDrawable) {
@@ -229,6 +222,7 @@ public class MainActivity extends AppCompatActivity {
         }
         return false; // Значок отсутствует
     }
+
 
 
 
