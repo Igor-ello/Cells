@@ -4,19 +4,15 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
 import android.annotation.SuppressLint;
-import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.GridLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import java.util.Objects;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
@@ -24,16 +20,13 @@ public class MainActivity extends AppCompatActivity {
     TextView[][] cells;
     String[][] cellsText;
     boolean[][] opened, cellsFlag;
-    TextView minesCounter, refresh, refreshButton, menuText;
+    TextView minesCounter, refresh1, refresh2, menuText;
     LinearLayout imStopGame;
 
-    final int MINESCONST = 4;
-    int minesCurrent = MINESCONST;
-    int minesReality = MINESCONST;
-    final int WIDTH = 10;
-    final int HEIGHT = 20 ;
+    final int MINESCONST = 35;
+    int minesCurrent = MINESCONST, minesReality = MINESCONST;
+    final int WIDTH = 10, HEIGHT = 20;
     boolean isStart = false;
-
 
 
     @Override
@@ -44,17 +37,21 @@ public class MainActivity extends AppCompatActivity {
         imStopGame = findViewById(R.id.imStopGame);
         menuText = findViewById(R.id.menuText);
         minesCounter = findViewById(R.id.mines);
+        refresh1 = findViewById(R.id.refresh1);
+        refresh2 = findViewById(R.id.refresh2);
 
-        generateCells();
+        initCells();
+        setListeners();
+
         generate();
+    }
 
-        refresh = findViewById(R.id.refresh);
-        refresh.setOnClickListener(view -> {
+    private void setListeners() {
+        refresh1.setOnClickListener(view -> {
             resetCells();
             generate();
         });
-        refreshButton = findViewById(R.id.refreshButton);
-        refreshButton.setOnClickListener(view -> {
+        refresh2.setOnClickListener(view -> {
             imStopGame.setVisibility(View.GONE);
             resetCells();
             generate();
@@ -62,12 +59,91 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void generate() {
-        minesCounter.setText(String.valueOf(minesCurrent + " / " + MINESCONST));
+        updateMinesCounter();
         setColorToCells();
         generateAction();
     }
 
-    public void generateCells() {
+    //States
+    public void isRunning(int i, int j){
+        if(isStart) {
+            if (!cellsText[i][j].equals(String.valueOf(-1))) {
+                cellsText[i][j] = String.valueOf(setTextToCell(i, j));
+                setTextColorToCell(i, j);
+            }
+        }
+    }
+
+    public void firstRun(int i, int j){
+        if(!isStart) {
+            isStart = true;
+            generateMines(i, j);
+            setColorToCells();
+            generateAction();
+        }
+    }
+
+    @SuppressLint("SetTextI18n")
+    public void loseTheGame(View view, int i, int j){
+        if(cellsFlag[i][j]){
+            minesCurrent++;
+            cellsFlag[i][j] = false;
+            updateMinesCounter();
+        }
+        if((i+j)%2 == 0)
+            view.setBackgroundColor(ContextCompat.getColor(this, R.color.darkGray));
+        else view.setBackgroundColor(ContextCompat.getColor(this, R.color.lightGray));
+
+        setPictureToCell(view, ContextCompat.getDrawable(getApplicationContext(), R.drawable.explosion));
+
+        menuText.setText("YOU LOSE!!!");
+        imStopGame.setVisibility(View.VISIBLE);
+    }
+
+    @SuppressLint("SetTextI18n")
+    public void winTheGame(){
+        menuText.setText("YOU WIN!!!");
+        imStopGame.setVisibility(View.VISIBLE);
+    }
+
+    public void generateAction() {
+        for (int i = 0; i < HEIGHT; i++) {
+            for (int j = 0; j < WIDTH; j++) {
+                final int finalI = i;
+                final int finalJ = j;
+
+                isRunning(i, j);
+                cells[i][j].setOnClickListener(view -> { // короткий клик
+                    firstRun(finalI, finalJ); //первый запуск
+
+                    if (cellsText[finalI][finalJ].equals("-1")) { // если бомба
+                        loseTheGame(view, finalI, finalJ); //поражение
+                    } else {
+                        openCells(finalI, finalJ); //открыть клетку
+                    }
+                });
+                cells[i][j].setOnLongClickListener(view -> { //долгий клик
+                    if(!opened[finalI][finalJ]) { // если клетка не открыта
+                        if (!cellsFlag[finalI][finalJ]) {
+                            setFlag(view, finalI, finalJ); // поставить флаг
+                        } else {
+                            deleteFlag(view, finalI, finalJ); // убрать флаг
+                        }
+                        updateMinesCounter();
+                    }
+
+                    if (minesReality == 0) {
+                        winTheGame(); // победа
+                    }
+                    return true;
+                });
+            }
+        }
+    }
+
+
+    //Cells
+    public void initCells() {
         LayoutInflater inflater = (LayoutInflater) getApplicationContext().getSystemService(LAYOUT_INFLATER_SERVICE);
         GridLayout layout = findViewById(R.id.grid);
         layout.removeAllViews(); // Удаляем все существующие представления в GridLayout (если они есть)
@@ -87,6 +163,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+
     public void resetCells(){
         minesCurrent = MINESCONST;
         minesReality = MINESCONST;
@@ -102,102 +179,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-    public void generateMines() {
-        int flag = 0;
-        while (flag < MINESCONST) {
-            int positionX = getRandomPosition(HEIGHT);
-            int positionY = getRandomPosition(WIDTH);
-            if (!cellsText[positionX][positionY].equals("-1")) {
-                cellsText[positionX][positionY] = "-1";
-                flag++;
-            }
-        }
-    }
-    public void generateMinesInit(int i, int j) {
-        int flag = 0;
-        while (flag < MINESCONST) {
-            int positionX = getRandomPosition(HEIGHT);
-            int positionY = getRandomPosition(WIDTH);
-            if ((!(cellsText[positionX][positionY].equals("-1")))) {
-                cellsText[positionX][positionY] = "-1";
-                if(setTextToCell(i, j) != 0)
-                    cellsText[positionX][positionY] = "0";
-                else flag++;
-            }
-        }
-    }
-
-    public void generateAction() {
-        for (int i = 0; i < HEIGHT; i++) {
-            for (int j = 0; j < WIDTH; j++) {
-                final int finalI = i;
-                final int finalJ = j;
-
-                if(isStart) {
-                    if (!cellsText[finalI][finalJ].equals(String.valueOf(-1))) {
-                        cellsText[finalI][finalJ] = String.valueOf(setTextToCell(finalI, finalJ));
-                        setTextColorToCell(finalI, finalJ);
-                    }
-                }
-
-                cells[i][j].setOnClickListener(view -> {
-                    if(!isStart) {
-                        isStart = true;
-                        generateMinesInit(finalI, finalJ);
-                        setColorToCells();
-                        generateAction();
-                    }
-
-
-                    if (cellsText[finalI][finalJ].equals("-1")) {
-                        if(cellsFlag[finalI][finalJ]){
-                            minesCurrent++;
-                            cellsFlag[finalI][finalJ] = false;
-                            minesCounter.setText(String.valueOf(minesCurrent + " / " + MINESCONST));
-                        }
-                        if((finalI+finalJ)%2 == 0)
-                            view.setBackgroundColor(ContextCompat.getColor(this, R.color.darkGray));
-                        else view.setBackgroundColor(ContextCompat.getColor(this, R.color.lightGray));
-
-                        setPictureToCell(view, ContextCompat.getDrawable(getApplicationContext(), R.drawable.explosion));
-
-                        menuText.setText("YOU LOSE!!!");
-                        imStopGame.setVisibility(View.VISIBLE);
-                    } else {
-                        openCells(finalI, finalJ);
-                    }
-                });
-                cells[i][j].setOnLongClickListener(view -> { //постановка уборка флага
-                    if(!opened[finalI][finalJ]) {
-                        if (!cellsFlag[finalI][finalJ]) {
-                            if (minesCurrent - 1 >= 0) {
-                                minesCurrent--;
-                                setPictureToCell(view, ContextCompat.getDrawable(this, R.drawable.flag));
-                                Log.i("MyLog", String.valueOf(cellsText[finalI][finalJ].equals("-1")));
-                                if(cellsText[finalI][finalJ].equals("-1"))
-                                    minesReality--;
-                            }
-                            cellsFlag[finalI][finalJ] = true;
-                        } else {
-                            minesCurrent++;
-                            if ((finalI + finalJ) % 2 == 0)
-                                view.setBackgroundColor(ContextCompat.getColor(this, R.color.lightGreen));
-                            else
-                                view.setBackgroundColor(ContextCompat.getColor(this, R.color.darkGreen));
-                            cellsFlag[finalI][finalJ] = false;
-                        }
-                        minesCounter.setText(String.valueOf(minesCurrent + " / " + MINESCONST));
-                    }
-
-                    if (minesReality == 0) {
-                        menuText.setText("YOU WIN!!!");
-                        imStopGame.setVisibility(View.VISIBLE);
-                    }
-                    return true;
-                });
-            }
-        }
-    }
 
     public void openCells(int i, int j) {
         if (i < 0 || i >= cells.length || j < 0 || j >= cells[0].length || opened[i][j]) {
@@ -210,7 +191,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (cellsFlag[i][j]) {
             minesCurrent++;
-            minesCounter.setText(String.valueOf(minesCurrent + " / " + MINESCONST));
+            updateMinesCounter();
         }
 
         if (!cellsText[i][j].equals("0")) cells[i][j].setText(cellsText[i][j]);
@@ -230,6 +211,17 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void setColorToCells() { //TODO покрасить цифры
+        for (int i = 0; i < HEIGHT; i++) {
+            for (int j = 0; j < WIDTH; j++) {
+                if ((i + j) % 2 == 0) cells[i][j].setBackgroundColor(ContextCompat.getColor(this, R.color.lightGreen));
+                else cells[i][j].setBackgroundColor(ContextCompat.getColor(this, R.color.darkGreen));
+            }
+        }
+    }
+
+
+    //Cell
     public int setTextToCell(int i, int j) {
         int count = 0;
 
@@ -247,6 +239,7 @@ public class MainActivity extends AppCompatActivity {
 
         return count;
     }
+
     public void  setTextColorToCell(int i, int j){
         int[] colors = {R.color.number1, R.color.number2, R.color.number3, R.color.number4, R.color.number5, R.color.number6, R.color.number7, R.color.number8};
         if(!cellsText[i][j].equals("0"))
@@ -266,15 +259,53 @@ public class MainActivity extends AppCompatActivity {
         view.setBackground(layerDrawable);
     }
 
-    public void setColorToCells() { //TODO покрасить цифры
-        for (int i = 0; i < HEIGHT; i++) {
-            for (int j = 0; j < WIDTH; j++) {
-                if ((i + j) % 2 == 0) cells[i][j].setBackgroundColor(ContextCompat.getColor(this, R.color.lightGreen));
-                else cells[i][j].setBackgroundColor(ContextCompat.getColor(this, R.color.darkGreen));
+
+    //Mines
+    public void generateMines(int i, int j) {
+        int flag = 0;
+        while (flag < MINESCONST) {
+            int positionX = getRandomPosition(HEIGHT);
+            int positionY = getRandomPosition(WIDTH);
+            if ((!(cellsText[positionX][positionY].equals("-1")))) {
+                cellsText[positionX][positionY] = "-1";
+                if(setTextToCell(i, j) != 0)
+                    cellsText[positionX][positionY] = "0";
+                else flag++;
             }
         }
+        minesCurrent = MINESCONST;
+        minesReality = MINESCONST;
+        updateMinesCounter();
     }
 
+    public void updateMinesCounter(){
+        minesCounter.setText(String.valueOf(minesCurrent + " / " + MINESCONST));
+    }
+
+
+    //Flag
+    public void setFlag(View view, int i, int j){
+        if (minesCurrent - 1 >= 0) {
+            minesCurrent--;
+            setPictureToCell(view, ContextCompat.getDrawable(this, R.drawable.flag));
+
+            if(cellsText[i][j].equals("-1"))
+                minesReality--;
+        }
+        cellsFlag[i][j] = true;
+    }
+
+    public void deleteFlag(View view, int i, int j){
+        minesCurrent++;
+        if ((i + j) % 2 == 0)
+            view.setBackgroundColor(ContextCompat.getColor(this, R.color.lightGreen));
+        else
+            view.setBackgroundColor(ContextCompat.getColor(this, R.color.darkGreen));
+        cellsFlag[i][j] = false;
+    }
+
+
+    //Other
     public int getRandomPosition(int value) {
         return new Random().nextInt(value);
     }
