@@ -23,7 +23,7 @@ public class MainActivity extends AppCompatActivity {
     TextView[][] cells;
     String[][] cellsText;
     boolean[][] opened; // Массив для отслеживания открытых клеток
-    TextView minesCounter, refresh, refreshButton;
+    TextView minesCounter, refresh, refreshButton, menuText;
     LinearLayout imStopGame;
 
     final int MINESCONST = 35;
@@ -39,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         imStopGame = findViewById(R.id.imStopGame);
+        menuText = findViewById(R.id.menuText);
 
         generateCells();
         generate();
@@ -133,8 +134,8 @@ public class MainActivity extends AppCompatActivity {
 
                         setPictureToCell(view, ContextCompat.getDrawable(getApplicationContext(), R.drawable.explosion));
 
+                        menuText.setText("YOU LOSE!!!");
                         imStopGame.setVisibility(View.VISIBLE);
-                        Toast.makeText(getApplicationContext(), "LOSE!!!", Toast.LENGTH_LONG).show();
                     } else {
                         openCells(finalI, finalJ);
                     }
@@ -149,7 +150,7 @@ public class MainActivity extends AppCompatActivity {
                     if(cellsText[finalI][finalJ].equals("-1"))
                         minesReality--;
                     if (minesReality == 0) {
-                        Toast.makeText(getApplicationContext(), "WIN!!!", Toast.LENGTH_LONG).show();
+                        menuText.setText("YOU WIN!!!");
                     }
                     return true;
                 });
