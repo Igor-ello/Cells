@@ -5,6 +5,15 @@
     <color name="darkGreen">#05870A</color>
     <color name="lightGreen">#8BC34A</color>
     <color name="background">#265C28</color>
-    <color name="darkGray">#B3ACAC</color>
-    <color name="lightGray">#979191</color>
+    <color name="darkGray">#e4c29f</color>
+    <color name="lightGray">#d7b899</color>
+
+    <color name="number1">#0000FF</color>
+    <color name="number2">#008000</color>
+    <color name="number3">#FF0000</color>
+    <color name="number4">#000080</color>
+    <color name="number5">#800000</color>
+    <color name="number6">#00FFFF</color>
+    <color name="number7">#000000</color>
+    <color name="number8">#808080</color>
 </resources>

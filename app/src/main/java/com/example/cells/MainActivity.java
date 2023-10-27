@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
 import android.annotation.SuppressLint;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
 import android.os.Bundle;
@@ -113,8 +114,11 @@ public class MainActivity extends AppCompatActivity {
                 final int finalI = i;
                 final int finalJ = j;
 
-                if (!cellsText[i][j].equals(String.valueOf(-1)))
+                if (!cellsText[i][j].equals(String.valueOf(-1))) {
                     cellsText[i][j] = String.valueOf(setTextToCell(i, j));
+                    setTextColorToCell(i, j);
+                }
+
 
 
                 cells[i][j].setOnClickListener(view -> {
@@ -195,6 +199,11 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return count;
+    }
+    public void  setTextColorToCell(int i, int j){
+        int[] colors = {R.color.number1, R.color.number2, R.color.number3, R.color.number4, R.color.number5, R.color.number6, R.color.number7, R.color.number8};
+        if(!cellsText[i][j].equals(""))
+            cells[i][j].setTextColor(ContextCompat.getColor(getApplicationContext(), colors[Integer.parseInt(cellsText[i][j])]));
     }
 
     public void setPictureToCell(View view, Drawable drawable) {
